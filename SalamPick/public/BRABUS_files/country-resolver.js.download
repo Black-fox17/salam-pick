@@ -1,0 +1,492 @@
+(function(countryResolver) {
+
+    countryResolver.options = {
+        allowedCountryList: [],
+        defaultCountry: 'int',
+        countryResolverEnabled: true,
+        countryResolverUrl: '',
+        countryIconUrl: '',
+        closeRedirectNotificationTimeout: 4000,
+        redirectSuggestion: {
+            'en': 'Find & buy products for __COUNTRY__.',
+            'de': 'Produkte für __COUNTRY__ finden & kaufen.'
+        },
+        redirectedNotice: {
+            'en': 'Welcome to BRABUS __COUNTRY__. Find & buy products for your market.',
+            'de': 'Willkommen bei BRABUS __COUNTRY__. Produkte für Ihren Markt finden & kaufen.'
+        },
+        countriesGroups: {
+            'Deutsche Website & Shop' : ['de', 'at'],
+            'English Website & Shop' : ['be', 'hr', 'cy', 'ee', 'fi', 'fr', 'gr', 'ie', 'it', 'lv', 'lt', 'lu', 'mt', 'nl', 'pt', 'sk', 'si', 'es'],
+            'Global english Website' : ['int'],
+            'Chinese Website (external)' : ['cn']
+        },
+        countryNames: {
+            'de': {
+                'en': 'Germany',
+                'de': 'Deutschland'
+            },
+            'at': {
+                'en': 'Austria',
+                'de': 'Österreich'
+            },
+            'be': {
+                'en': 'Belgium',
+                'de': 'Belgien'
+            },
+            'hr': {
+                'en': 'Croatia',
+                'de': 'Kroatien'
+            },
+            'cy': {
+                'en': 'Cyprus',
+                'de': 'Zypern'
+            },
+            'ee': {
+                'en': 'Estonia',
+                'de': 'Estland'
+            },
+            'fi': {
+                'en': 'Finland',
+                'de': 'Finnland'
+            },
+            'fr': {
+                'en': 'France',
+                'de': 'Frankreich'
+            },
+            'gr': {
+                'en': 'Greece',
+                'de': 'Griechenland'
+            },
+            'ie': {
+                'en': 'Ireland',
+                'de': 'Irland'
+            },
+            'it': {
+                'en': 'Italy',
+                'de': 'Italien'
+            },
+            'lv': {
+                'en': 'Latvia',
+                'de': 'Lettland'
+            },
+            'lt': {
+                'en': 'Lithuania',
+                'de': 'Litauen'
+            },
+            'lu': {
+                'en': 'Luxembourg',
+                'de': 'Luxemburg'
+            },
+            'mt': {
+                'en': 'Malta',
+                'de': 'Malta'
+            },
+            'nl': {
+                'en': 'Netherlands',
+                'de': 'Niederlande'
+            },
+            'pt': {
+                'en': 'Portugal',
+                'de': 'Portugal'
+            },
+            'sk': {
+                'en': 'Slovakia',
+                'de': 'Slowakei'
+            },
+            'si': {
+                'en': 'Slovenia',
+                'de': 'Slowenien'
+            },
+            'es': {
+                'en': 'Spain',
+                'de': 'Spanien'
+            },
+            'int': {
+                'en': 'International',
+                'de': 'International'
+            },
+            'cn': {
+                'en': 'China',
+                'de': 'China'
+            }
+        }
+    }
+
+    const getLanguageForCountry = (country) => (['de', 'at'].includes(country)) ? 'de' : country === 'cn' ? 'cn' : 'en';
+
+    const getUrlPathParts = (urlPath) => urlPath.split('/').filter(part => part);
+
+    const countryIsAllowed = (country) => countryResolver.options.allowedCountryList.includes(country);
+
+    const filterAllowedCountries = (country, defaultCountry = null) => countryIsAllowed(country) ? country : defaultCountry;
+
+    function resolveCountryByIp() {
+        // override country detection in console for local tests: localStorage.setItem('countryOverride', 'XY')
+        const countryOverride = localStorage.getItem('countryOverride');
+        if (countryOverride) {
+            return new Promise((resolve) => resolve(countryOverride));
+        }
+        return fetch(countryResolver.options.countryResolverUrl)
+            .then((response) => response.text())
+            .catch((error) => {console.warn(error)})
+    }
+
+    function parseLocale() {
+        const urlParts = getUrlPathParts(window.location.pathname);
+        if (urlParts.length && /[a-z]{2}(-[a-z]{2,3})?/.test(urlParts[0])) {
+            const isoParts = urlParts[0].split('-');
+            return {
+                language: isoParts[0],
+                country: isoParts[1] ?? null
+            };
+        }
+        return {
+            language: null,
+            country: null
+        };
+    }
+
+    function getUrlFromHrefLang(language, country) {
+        var hrefLangElement = document.querySelector('link[hreflang=' + language + '-' + country + ']');
+        if (hrefLangElement) {
+            return hrefLangElement.getAttribute('href');
+        }
+        hrefLangElement = document.querySelector('link[hreflang=' + language + ']');
+        if (hrefLangElement) {
+            return hrefLangElement.getAttribute('href');
+        }
+        return null;
+    }
+
+    /* This relies on the markup of Wysiwyg.Brabus.Website:Component.Molecule.Alert
+     * as configured in (Wysiwyg.Brabus.Website:Page.Default).body.templates.geoLocationRedirectedNoticeTemplate
+     */
+    function showRedirectedNotification(country) {
+        localStorage.removeItem('showRedirectedNotification');
+
+        const geoLocationRedirectedNoticeTemplate = document.querySelector('#geoLocationRedirectedNoticeTemplate');
+        let geoLocationRedirectedNotice = geoLocationRedirectedNoticeTemplate.content.firstElementChild.cloneNode(true);
+        let textElement = geoLocationRedirectedNotice.querySelectorAll('p.alert__text')[0];
+        textElement.textContent = countryResolver.options.redirectedNotice[parseLocale().language].replace(
+            '__COUNTRY__',
+            countryResolver.options.countryNames[country][parseLocale().language]
+        );
+
+        const main = document.getElementsByTagName('main')[0];
+        const child = main.insertBefore(geoLocationRedirectedNotice, main.firstChild);
+        const scrollTopAtLoad = window.scrollY;
+
+        const removeOnScrollEventHandler = () => {
+            // there seems to be automatic scrolling by some subpixels sometimes
+            if (window.scrollY > scrollTopAtLoad + 5 || window.scrollY < scrollTopAtLoad - 5) {
+                removeEventListener('scroll', removeOnScrollEventHandler);
+                child.remove();
+            }
+        }
+
+        setTimeout(
+            () => {
+                removeEventListener('scroll', removeOnScrollEventHandler);
+                child.remove()
+            },
+            countryResolver.options.closeRedirectNotificationTimeout
+        );
+
+        addEventListener('scroll', removeOnScrollEventHandler);
+    }
+
+    function getUrlForCountry(country) {
+        const language = getLanguageForCountry(country);
+        const urlForTargetLanguage = getUrlFromHrefLang(language, country) || window.location.href;
+        const url = new URL(urlForTargetLanguage);
+        const urlParts = getUrlPathParts(url.pathname);
+
+        if (country === 'cn') {
+            const dropDown = document.querySelector('.dropdown');
+            return dropDown.getAttribute('data-china-link');
+        }
+
+        if (urlParts.length === 0 || !urlParts[0]) {
+            // no dimensions
+            return urlForTargetLanguage + language + '-' + country;
+        }
+        return urlForTargetLanguage;
+    }
+
+    function clearCart() {
+        // does using the cached csrf really make sense here? (stolen from cart.js)
+        const csrfToken = document.querySelector('meta[name=csrf]').content || '';
+        return fetch('/service/cart?' + new URLSearchParams({__csrfToken: csrfToken}), {
+            method: 'DELETE',
+            cache: 'no-cache'
+        }).catch((error) => console.warn(error)).then(() => {
+            localStorage.removeItem('brabus-cart-item-count');
+            // need to initialize a fresh cart, otherwise add-to-cart won't work without page reload
+            return fetch('/service/cart?' + new URLSearchParams({__csrfToken: csrfToken}), {
+                method: 'GET',
+                cache: 'no-cache'
+            })
+        });
+    }
+
+    async function redirectToCountry(country, keepCart) {
+        const flyout = document.getElementById('flyoutLocation');
+        showSpinner(flyout);
+
+        localStorage.setItem('showRedirectedNotification', country);
+        localStorage.setItem('preferredCountry', country);
+
+        const countryUrl = getUrlForCountry(country);
+        if (keepCart) {
+            window.location.replace(countryUrl);
+        } else {
+            clearCart().then(() => window.location.replace(countryUrl));
+        }
+    }
+
+    // This relies on the markup of Wysiwyg.Brabus.Website:Component.Molecule.Alert
+    // as configured in (Wysiwyg.Brabus.Website:Page.Default).body.templates.geoLocationRedirectSuggestionTemplate
+    function showCountrySelector(currentCountry, suggestedCountry) {
+        const geoLocationRedirectSuggestionTemplate = document.querySelector('#geoLocationRedirectSuggestionTemplate');
+        const geoLocationRedirectSuggestion = geoLocationRedirectSuggestionTemplate.content.cloneNode(true);
+
+        let textElement = geoLocationRedirectSuggestion.querySelectorAll('p.alert__text')[0];
+        textElement.textContent = countryResolver.options.redirectSuggestion[parseLocale().language].replace(
+            '__COUNTRY__',
+            countryResolver.options.countryNames[suggestedCountry][parseLocale().language]
+        );
+        let buttonElement = geoLocationRedirectSuggestion.querySelectorAll('button.alert__button')[0];
+        buttonElement.textContent = 'BRABUS ' + countryResolver.options.countryNames[suggestedCountry][parseLocale().language];
+        buttonElement.addEventListener('click', () => {
+            redirectToCountry(suggestedCountry, false);
+        });
+        let dismissButtonElement = geoLocationRedirectSuggestion.querySelectorAll('button.alert__button--close')[0];
+        dismissButtonElement.addEventListener('click', () => {
+            localStorage.setItem('preferredCountry', currentCountry);
+        });
+
+        const main = document.getElementsByTagName('main')[0];
+        main.insertBefore(geoLocationRedirectSuggestion, main.firstChild);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function detectCountryAndRedirect() {
+        const redirectedTo = localStorage.getItem('showRedirectedNotification');
+        if (redirectedTo) {
+            showRedirectedNotification(localStorage.getItem('showRedirectedNotification'));
+            return;
+        }
+
+        const preferredCountry = filterAllowedCountries(localStorage.getItem('preferredCountry'));
+        const urlCountry = filterAllowedCountries(parseLocale().country);
+        const geoCountry = preferredCountry ? null : filterAllowedCountries(await resolveCountryByIp(), countryResolver.options.defaultCountry);
+
+        if (!urlCountry) {
+            if (preferredCountry) {
+                redirectToCountry(preferredCountry, true);
+                return;
+            }
+            redirectToCountry(geoCountry, true);
+            return;
+        }
+
+        if (preferredCountry && urlCountry !== preferredCountry) {
+            showCountrySelector(urlCountry, preferredCountry);
+            return;
+        }
+
+        if (geoCountry && urlCountry !== geoCountry) {
+            showCountrySelector(urlCountry, geoCountry);
+        }
+
+        if (!preferredCountry && urlCountry === geoCountry) {
+            localStorage.setItem('preferredCountry', urlCountry);
+        }
+    }
+
+    function renderCountriesList(flyout) {
+        const language = parseLocale().language ?? 'en';
+        const locationContainer = document.getElementById('countriesDropdown');
+
+        for (let group in countryResolver.options.countriesGroups) {
+            let rows = '';
+            for (var i = 0; i < countryResolver.options.countriesGroups[group].length; i++) {
+                let country = countryResolver.options.countriesGroups[group][i];
+                rows +=
+                    '<li class="dropdown__item">' +
+                        '<input class="dropdown__item-id" type="radio" id="' + country + '"/>' +
+                        '<label class="dropdown__item-label" for="' + country + '">' +
+                            '<svg class="dropdown__icon">' +
+                                '<use href="' + countryResolver.options.countryIconUrl + '#location--' + country + '" />' +
+                            '</svg>' +
+                            countryResolver.options.countryNames[country][language] +
+                        '</label>' +
+                    '</li>';
+            }
+
+            locationContainer.innerHTML +=
+                '<li class="dropdown__group">' +
+                    '<span class="dropdown__group-title">' + group + '</span>' +
+                    '<ul class="dropdown__group-list">' +
+                        rows +
+                    '</ul>' +
+                '</li>';
+        }
+    }
+
+    function closeLocationFlyout(flyout) {
+        flyout.classList.remove('is-active');
+    }
+
+    function toggleLocationFlyout(flyout) {
+        flyout.classList.toggle('is-active');
+    }
+
+    function isLocationFlyoutOpen(flyout) {
+        return flyout.classList.contains('is-active');
+    }
+
+    function showSpinner(flyout) {
+        return flyout.querySelector('.location .spinner').style.removeProperty('display');
+    }
+
+    function hideSpinner(flyout) {
+        return flyout.querySelector('.location .spinner').style.display = 'none';
+    }
+
+    function initLocationFlyout() {
+        const toggle = document.getElementById('toggleLocation');
+        const flyout = document.getElementById('flyoutLocation');
+
+        if (!toggle || !flyout) {
+            return;
+        }
+
+        hideSpinner(flyout);
+
+        toggle.addEventListener('click', () => {
+            toggleLocationFlyout(flyout);
+            event.stopPropagation();
+        });
+
+        document.addEventListener('show.bs.modal', () => closeLocationFlyout(flyout));
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key.toLowerCase() === 'escape' && isLocationFlyoutOpen(flyout)) {
+                closeLocationFlyout(flyout);
+            }
+        });
+
+        document.addEventListener('click', function(event){
+            if (isLocationFlyoutOpen(flyout) && !flyout.contains(event.target) && flyout.id !== event.target.id) {
+                closeLocationFlyout(flyout);
+            }
+        });
+
+        renderCountriesList(flyout);
+
+        flyout.querySelector('.location .location__link').addEventListener('click', (event) => redirectToCountry('int', false));
+
+        handleDropdownEvents(flyout);
+    }
+
+    function handleDropdownEvents(flyout) {
+        const dropdown = document.querySelector('.dropdown');
+        const dropdownButton = document.querySelector('.dropdown__button');
+        const locationContainer = document.querySelector('.location');
+        const dropdownOutputLabel = document.querySelector('.dropdown__output-label');
+        const dropdownOutputIcon = document.querySelector('.dropdown__icon use');
+
+        const dropdownItemList = document.querySelector('.dropdown__list');
+        const dropdownItems = document.querySelectorAll('.dropdown__item');
+
+        dropdownButton.addEventListener('click', () => {
+            let availableContainerHeight = locationContainer.clientHeight - 50;
+            let dropdownTop = dropdown.getBoundingClientRect().top - locationContainer.getBoundingClientRect().top - 5;
+            let listHeight = dropdownItemList.scrollHeight;
+            let availableListHeight = availableContainerHeight - dropdownTop;
+
+            // calc height of dropdown list
+            if (listHeight <= availableListHeight) {
+                return; // Do nothing
+            } else if (listHeight <= availableContainerHeight) {
+                let top = -(listHeight - availableListHeight);
+                dropdownItemList.style.top = top + 'px';
+            } else {
+                dropdownItemList.style.top = -dropdownTop + 'px';
+                dropdownItemList.style.height = availableContainerHeight + 'px';
+            }
+
+            // add/remove visibility class on the container element
+            dropdownItemList.classList.toggle('dropdown__list--visible');
+
+            // update the aria-expanded attribute based on the current state
+            dropdownButton.setAttribute(
+                'aria-expanded',
+                dropdownButton.getAttribute('aria-expanded') === 'true' ? 'false' : 'true'
+            );
+        });
+
+        dropdownItems.forEach((item) => {
+            function handler(e) {
+                // Click Events
+                if (e.type === 'click' && e.clientX !== 0 && e.clientY !== 0 && e.target.id !== '') {
+                    dropdownOutputLabel.textContent = this.children[1].textContent;
+                    dropdownOutputIcon.setAttribute('href', countryResolver.options.countryIconUrl + '#location--' + e.target.id);
+                    dropdownItemList.classList.remove('dropdown__list--visible');
+                    showSpinner(flyout);
+                    redirectToCountry(e.target.id, false);
+                }
+
+                // Key Events
+                if (e.key === 'Enter' && e.target.id !== '') {
+                    dropdownOutputLabel.textContent = this.textContent;
+                    dropdownItemList.classList.remove('dropdown__list--visible');
+                    showSpinner(flyout);
+                    redirectToCountry(e.target.id, false);
+                }
+            }
+
+            item.addEventListener('click', handler);
+            item.addEventListener('keyup', handler);
+        });
+
+        $(document).keyup(function(e) {
+            if (e.key === 'Escape') { // escape key maps to keycode `27`
+                dropdownItemList.classList.remove('dropdown__list--visible');
+            }
+        });
+
+        // Close dropdown list with click outside element
+
+        $(document).click(function(e) {
+            if (!dropdown.contains(e.target)) {
+                dropdownItemList.classList.remove('dropdown__list--visible');
+            }
+        });
+    }
+
+    function initOptions(options) {
+        countryResolver.options = {...countryResolver.options, ...options};
+        countryResolver.options.allowedCountryList = Object.getOwnPropertyNames(countryResolver.options.countryNames);
+    }
+
+    countryResolver.init = function(options) {
+        initOptions(options);
+        // To speed up the detection, we also could call the detect method immediately. We then would have to call subsequent dom manipulations after dom is ready.
+        if (options.countryResolverEnabled) {
+            document.addEventListener('DOMContentLoaded', () => {
+                initLocationFlyout();
+                return detectCountryAndRedirect();
+            }, {once: true});
+        }
+    };
+
+})(window.BrabusCountryResolver = window.BrabusCountryResolver || {});
+
+BrabusCountryResolver.init({
+    countryResolverUrl,
+    countryIconUrl,
+    countryResolverEnabled
+});

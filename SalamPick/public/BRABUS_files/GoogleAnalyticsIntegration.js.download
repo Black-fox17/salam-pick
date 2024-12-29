@@ -1,0 +1,72 @@
+var WY = WY || {};
+
+WY.GoogleAnalyticsIntegration = (function ($) {
+    'use strict';
+
+    //-- PRIVATE FUNCTIONS ---------------------------------------
+    function initCookieListenerForScript() {
+        document.addEventListener('cookieConsentChanged', function (data) {
+            var googleAnalyticsEnabled = WY.CookieHandling.cookieGroupIsAccepted('statistics');
+            if (googleAnalyticsEnabled) {
+                enableGoogleAnalyticsMeasurement();
+            } else {
+                disableGoogleAnalyticsMeasurement();
+            }
+        });
+    }
+
+    /**
+     * disable google analytics
+     *
+     * https://developers.google.com/analytics/devguides/collection/analyticsjs/user-opt-out
+     */
+    function disableGoogleAnalyticsMeasurement() {
+        window['ga-disable-' + window.gtmId] = true;
+    }
+
+    /**
+     * enable google analytic and load analytics-script
+     *
+     * https://developers.google.com/analytics/devguides/collection/analyticsjs/user-opt-out
+     */
+    function enableGoogleAnalyticsMeasurement() {
+        window['ga-disable-' + window.gtmId] = false;
+
+        // PREVENT multiple gtm.js pushes
+        if (window.ga === undefined) {
+            initGoogleAnalyticsScript();
+        }
+    }
+
+    function initGoogleAnalyticsScript() {
+        (function (w, d, s, l, i) {
+            w[l] = w[l] || [];
+            w[l].push({
+                'gtm.start': new Date().getTime(), event: 'gtm.js'
+            });
+            var f = d.getElementsByTagName(s)[0], j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : '';
+            j.async = true;
+            j.src = '//www.googletagmanager.com/gtm.js?id=' + i + dl;
+            f.parentNode.insertBefore(j, f);
+        })(window, document, 'script', 'dataLayer', window.gtmId);
+    }
+
+    //-- PUBLIC API ----------------------------------------------
+    return {
+        init: function () {
+
+            initCookieListenerForScript();
+
+            if (WY.CookieHandling.cookieGroupIsAccepted('statistics')) {
+                enableGoogleAnalyticsMeasurement();
+            } else {
+                disableGoogleAnalyticsMeasurement();
+            }
+        }
+    };
+
+}(window.jQuery));
+
+$(document).ready(function () {
+    WY.GoogleAnalyticsIntegration.init();
+});

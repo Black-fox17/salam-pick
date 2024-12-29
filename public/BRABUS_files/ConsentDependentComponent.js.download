@@ -1,0 +1,185 @@
+var WY = WY || {};
+
+/**
+ * Inline layer to get consent for external content (Iframe/WebComponents/Scripts etc.) and defer loading
+ */
+WY.ConsentDependendComponent = {
+    cookieUtils: {
+        appendedScripts: []
+    },
+
+    init: function () {
+        if (WY.CookieHandling === undefined) {
+            return;
+        }
+        this.initOpenCookieLayerEvents();
+        this.initToggleAcceptEvents();
+        this.initAcceptCookieGroup();
+        this.initConsentChangeEvent();
+        this.initConsentComponents();
+    },
+
+
+    initConsentComponents: function () {
+        var $consentComponents = $('.consentDependent');
+
+        $consentComponents.each(function () {
+            var requiredGroups = $(this).data('toggle-cookie-groups').split(' ');
+            var showPlaceholder = !WY.ConsentDependendComponent.allRequiredGroupsAreSet(requiredGroups);
+
+            WY.ConsentDependendComponent.toggleInlineCookieGroupForm($(this), showPlaceholder);
+        });
+    },
+
+    /**
+     * observe checkbox that toggles the accept button on inline cookie layer for external content
+     */
+    initToggleAcceptEvents: function () {
+        $('[data-cookie-toggle-accept]').on('change', function (event) {
+            var $toggler = $(this);
+            var $target = $($toggler.data('cookie-toggle-accept'));
+
+            if ($toggler.is(':checked')) {
+                $target.removeAttr('disabled');
+            } else {
+                $target.attr('disabled', 'disabled');
+            }
+        });
+    },
+
+    /**
+     * observe the additional "open cookie layer" link in inline cookie layer
+     */
+    initOpenCookieLayerEvents: function () {
+        $('.open-cookie-layer').on('click', function () {
+            WY.CookieLayer.openCookieLayer();
+        });
+    },
+
+    /**
+     * observe the accept cookie group button on inline cookie layer
+     */
+    initAcceptCookieGroup: function () {
+        $('a[data-activate-cookie-groups]').on('click', function () {
+            if ($(this).attr('disabled') === 'disabled') {
+                return;
+            }
+
+            var groups = $(this).data('activate-cookie-groups').split(', ');
+            groups.forEach(function (group) {
+                WY.CookieHandling.acceptAllCookiesFromGroup(group);
+            });
+
+            WY.CookieHandling.saveConsentCookie();
+            // needed to update checkboxes in the coolie layer. TODO: there should be an easier / automatic way
+            WY.CookieLayer.initCookieGroupCheckboxes();
+
+            // unset checkbox and disable button again (reset "form" if shown later)
+            $(this).attr('disabled', 'disabled');
+            $('input[data-cookie-toggle-accept="#' + $(this).attr('id') + '"]').prop('checked', false);
+        });
+    },
+
+    /**
+     * observe "change" event from cookie handler. All inline cookie layers have to be checked and
+     * external content needs to be initialized or deactivated when a group has changed.
+     */
+    initConsentChangeEvent: function () {
+        document.addEventListener(WY.CookieHandling.settings.cookieConsentChangedEventName, function (evt) {
+            // loop all widgets
+            $('[data-toggle-cookie-groups]').each(function () {
+
+                var $consentContainer = $(this);
+                var requiredGroups = $consentContainer.data('toggle-cookie-groups').split(' ');
+                var showPlaceholder = !WY.ConsentDependendComponent.allRequiredGroupsAreSet(requiredGroups);
+
+                WY.ConsentDependendComponent.toggleInlineCookieGroupForm($consentContainer, showPlaceholder);
+            });
+        });
+    },
+
+    /**
+     * check if all cookie groups are accepted
+     *
+     * @param groups
+     * @return {boolean}
+     */
+    allRequiredGroupsAreSet: function (groups) {
+        for (var i = 0; i < groups.length; i++) {
+            if (!WY.CookieHandling.cookieGroupIsAccepted(groups[i])) {
+                return false;
+            }
+        }
+        return true;
+    },
+
+    /**
+     * hide or show the inline cookie group layer for external content
+     *
+     * @param $consentContainer
+     * @param showPlaceholder
+     */
+    toggleInlineCookieGroupForm: function ($consentContainer, showPlaceholder) {
+        if (showPlaceholder) {
+            $consentContainer.find('.consentPlaceholder').show();
+            this.disabledConsentRequiredContent($consentContainer);
+            return;
+        }
+        $consentContainer.find('.consentPlaceholder').hide();
+        this.enableConsentRequiredContent($consentContainer);
+    },
+
+    enableConsentRequiredContent: function ($consentContainer) {
+        var $consentRequiredContent = $consentContainer.find('.consentRequiredContent');
+        var iFrame = $consentContainer.find('iframe[data-src]');
+        var scripts = $consentContainer.find('.consentDependentScript');
+
+        if (iFrame.length) {
+            var src = iFrame.data('src');
+            iFrame.attr('src', src);
+        }
+
+        if (scripts.length) {
+            $(scripts).each(function () {
+                WY.ConsentDependendComponent.appendScriptTag(this);
+            });
+        }
+        $consentRequiredContent.show();
+    },
+
+    disabledConsentRequiredContent: function ($consentContainer) {
+        var $consentRequiredContent = $consentContainer.find('.consentRequiredContent');
+        var iFrame = $consentContainer.find('iframe[data-src]');
+
+        if (iFrame.length) {
+            iFrame.removeAttr('src');
+        }
+        $consentRequiredContent.hide();
+    },
+
+    appendScriptTag: function(scriptElement) {
+        if (this.cookieUtils.appendedScripts.indexOf(scriptElement.id) !== -1) {
+            return;
+        }
+
+        var script = document.createElement('script');
+        script.type = 'text/javascript';
+
+        if ($(scriptElement).data('async')) {
+            script.setAttribute('async', '');
+        }
+        if ($(scriptElement).data('defer')) {
+            script.setAttribute('defer', '');
+        }
+        script.src = $(scriptElement).data('src');
+        document.body.appendChild(script);
+
+        this.cookieUtils.appendedScripts.push(scriptElement.id);
+    }
+};
+
+$(document).ready(function () {
+    WY.ConsentDependendComponent.init();
+});
+
+

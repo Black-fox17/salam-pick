@@ -1,0 +1,156 @@
+function pushImpressions(impressions, currency) {
+    if (impressions.length !== 0) {
+        dataLayer.push({
+            'event': 'productImpression',
+            'ecommerce': {
+                'currencyCode': currency,
+                'impressions': impressions
+            }
+        });
+    }
+}
+
+function pushProductClick(data) {
+    dataLayer.push({
+        'event': 'productClick',
+        'ecommerce': {
+            'currencyCode': data['currencyCode'],
+            'click': {
+                'actionField': {'list': data['list']},
+                'products': data['products']
+            }
+        }
+    });
+}
+
+$(window).ready(function () {
+    var impressions = [];
+    var CHUNK_SIZE = 15;
+
+    // element: click event trigger
+    var CLICK_TRIGGER_ELEMENT = '[data-event-trigger]';
+    // observe "click event" button
+    $(CLICK_TRIGGER_ELEMENT).on('click', function () {
+        var trigger = $(this);
+        var category = $(trigger).attr('data-event-category');
+        var action = $(trigger).attr('data-event-action');
+        var label = $(trigger).attr('data-event-label');
+
+        if (category !== '' &&  action !== '' && label !== ''){
+            dataLayer.push({
+                'event': 'click',
+                'eventCategory': category,
+                'eventAction': action,
+                'eventLabel': label
+            });
+        }
+
+    });
+
+    var currency = 'EUR';
+
+    $("a.product-teaser").on('click', function () {
+        var dataClick = $(this).data('tracking');
+
+        pushProductClick(dataClick);
+    }).each(function (i, elem) {
+        var data = $(elem).data('tracking');
+        currency = data['currencyCode'];
+
+        if (data['products']){
+            data['products'].forEach(function (item, index) {
+                item['position'] = i + 1;
+                impressions.push(item);
+            });
+
+            if ((i + 1) % CHUNK_SIZE === 0) {
+                pushImpressions(impressions, currency);
+                impressions = [];
+            }
+        }
+
+    });
+
+    pushImpressions(impressions, currency);
+
+    impressions = [];
+    $("a.cars-for-sale").on('click', function () {
+        var dataClick = $(this).data('tracking');
+
+        pushProductClick(dataClick);
+    }).each(function (i, elem) {
+        var data = $(elem).data('tracking');
+
+        if (data['products']){
+            data['products'].forEach(function (item, index) {
+                item['position'] = i + 1;
+                impressions.push(item);
+            });
+
+            if ((i + 1) % CHUNK_SIZE === 0) {
+                pushImpressions(impressions, currency);
+                impressions = [];
+            }
+        }
+
+    });
+
+    pushImpressions(impressions, currency);
+
+    impressions = [];
+    $("a.classic-cars-for-sale").on('click', function () {
+        var dataClick = $(this).data('tracking');
+
+        pushProductClick(dataClick);
+    }).each(function (i, elem) {
+        var data = $(elem).data('tracking');
+        currency = data['currencyCode'];
+
+        if (data['products']){
+            data['products'].forEach(function (item, index) {
+                item['position'] = i + 1;
+                impressions.push(item);
+            });
+
+            if ((i + 1) % CHUNK_SIZE === 0) {
+                pushImpressions(impressions, currency);
+                impressions = [];
+            }
+        }
+
+    });
+
+    pushImpressions(impressions, currency);
+});
+
+$(window).ready(function () {
+    $("a.tracking").on('click', function () {
+        var dataClick = $(this).data('tracking');
+
+        if (dataClick['products']) {
+            dataLayer.push({
+                event: "addToCart",
+                ecommerce: {
+                    currency: "EUR",
+                    add: {
+                        products: dataClick['products']
+                    }
+                }
+            });
+        }
+    });
+
+    $("button.tracking").on('click', function () {
+        var data = $("a.tracking").data('tracking');
+
+        if (data) {
+            dataLayer.push({
+                event: "request_purchase",
+                ecommerce: {
+                    currency: "EUR",
+                    items: data['products']
+                }
+            });
+        }
+    });
+});
