@@ -2,7 +2,7 @@ services:
   - type: web
     name: laravel-app
     env: php
-    plan: free
+    region: oregon
     buildCommand: |
       composer install --no-dev --optimize-autoloader
       php artisan config:cache
