@@ -13,12 +13,12 @@
     </a>
     <div class="cart-container">
     <h1>Your Cart</h1>
+    @php
+        $total = 0;
+    @endphp
     @if(empty($cart))
         <p>Your cart is empty.</p>
     @else
-        @php
-            $total = 0;
-        @endphp
         @foreach($cart as $productId => $item)
             @php
                 $total += $item['price'] * $item['quantity'];
@@ -42,7 +42,7 @@
         </div>
         <div class="google-btn">
             <div id ="payment"></div>
-        <div<
+        <div>
     @endif
 </div>
 @endsection
