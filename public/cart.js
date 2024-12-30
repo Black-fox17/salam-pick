@@ -66,4 +66,4 @@ function removeFromCart(productId) {
     .catch(error => console.error('Error:', error));
 }
 
-document.addEventListener('DOMContentLoaded', updateCartCount);
+// document.addEventListener('DOMContentLoaded', updateCartCount);
