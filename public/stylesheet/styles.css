@@ -720,7 +720,7 @@ h2{
 
 .form-gro label {
     font-size: 14px;
- <<<<<<< HEAD
+}
 .fas-img-container {
     max-width: 1200px;
     padding: 40px auto;
@@ -748,19 +748,55 @@ h2{
     height: 50%;
     object-fit: cover;
 }
-=======
->>>>>>> 5333a6c9bb15b6a10dcf86f501aa6cba74ba61b4
-ground-color: #cc001f;
+
+.payment-container {
+    max-width: 400px;
+    margin: 50px auto;
+    padding: 20px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.header h1 {
+    font-size: 24px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.form-gro {
+    margin-bottom: 15px;
+}
+
+.form-gro label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.form-gro input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.btn {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    background-color: #cc001f;
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: 5px;
+    font-size: 16px;
     cursor: pointer;
-    transition: background-color 0.3s ease;
 }
 
 .btn:hover {
     background-color: #c0392b;
 }
+
 .google-btn{
     max-width: fit-content;
     display: flex;
