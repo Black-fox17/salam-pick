@@ -12,7 +12,7 @@
         </div>
     </a>
     <div class="cart-container">
-    <h1>Your Cart</h1>
+    <h1>Your Cart </h1>
     @php
         $total = 0;
     @endphp
