@@ -53,13 +53,28 @@ h2{
 .fashion-head{
     text-align: center;
 }
-.header-image{
-    width: 128px;
-    height: 4px;
-    margin-left: auto;
-    margin-right: auto;
-
+/* Header Image Styling */
+.header-image {
+    display: flex;
+    justify-content: center; /* Center the image */
+    align-items: center; /* Align the image vertically */
+    flex: 1; /* Allows the image container to expand in the center */
 }
+
+
+.header-image .logo {
+    width: 150px; /* Define width */
+    height: auto; /* Maintain aspect ratio */
+    max-width: 100%; /* Prevent overflow */
+}
+
+/* Optional: Add responsiveness */
+@media (max-width: 768px) {
+    .header-image .logo {
+        width: 120px; /* Smaller width for smaller screens */
+    }
+}
+
 .form-group{
     display: flex;
     flex-direction: column;
@@ -149,39 +164,35 @@ h2{
     object-fit: cover;
     z-index: -1; /* Behind everything */
   }
-.header{
+  .header {
     position: sticky;
     display: flex;
+    justify-content: space-between; /* Space out children of the header */
+    align-items: center; /* Align items vertically in the center */
     left: 0;
     right: 0;
     top: 0;
     z-index: 1030;
+    margin: 0;
+    
 }
-.auth{
+.auth {
     display: flex;
-    justify-content: space-between;
-    align-items: right;
+    gap: 10px; /* Space between login and signup buttons */
 }
-.login{
-    margin-right: 10px;
+
+.login, .signup {
     background-color: #f3f0eb;
     border-radius: 5px;
-    padding: 5px;
+    padding: 5px 10px; /* Add padding for better appearance */
     cursor: pointer;
+    text-align: center; /* Center text inside the button */
 }
-.login a{
+
+.login a, .signup a {
     color: #9d5248;
     text-decoration: none;
-}
-.signup{
-    background-color: #f3f0eb;
-    border-radius: 5px;
-    cursor: pointer;
-    padding: 5px;
-}
-.signup a{
-    color: #9d5248;
-    text-decoration: none;
+    
 }
 .dropdown-item{
     border-radius: 5px;
