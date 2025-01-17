@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-commerce Admin Panel</title>
-    <link rel="stylesheet" href="styles.css">
+    <title> Admin </title>
+    <link rel="stylesheet" href="admin.css">
 </head>
 <body>
     <div class="container">
-        <h1>E-commerce Admin Panel</h1>
+        <h1>SalamPick Admin Panel</h1>
         
         <form id="productForm" class="product-form">
             <div class="form-group">
@@ -36,7 +36,7 @@
             </div>
 
             <div class="form-group">
-                <label for="whyWantProduct">Why Want Product:</label>
+                <label for="whyWantProduct">Why i Want Product:</label>
                 <textarea id="whyWantProduct" required></textarea>
             </div>
 
@@ -77,6 +77,6 @@
             <pre id="jsonPreview"></pre>
         </div>
     </div>
-    <script src="script.js"></script>
+    <script src="admin.js"></script>
 </body>
 </html>
