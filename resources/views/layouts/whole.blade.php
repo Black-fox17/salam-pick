@@ -18,7 +18,7 @@
                 <img src="{{asset('LoroPiana-logo.svg')}}" alt="Website Logo" class="logo">
             </a>
         </div>
-        @guest
+        @guest`
             <div class="auth">
                 <div class="login">
                     <a href="{{ route('signin') }}">

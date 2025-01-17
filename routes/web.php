@@ -18,6 +18,9 @@ Route::post('/signin', [App\Http\Controllers\Auth\LoginController::class, 'login
 Route::get('/', function(){
     return view('main');
 }) -> name('main');
+Route::get('/admin', function () {
+    return view('admin'); // Replace with your dashboard view
+})->name('admin');
 Route::get("/product/{id}",[ProductController::class,'getProduct'])-> name('product.show');
 Route::get("/fashion-products",[ProductController::class,'showProducts']) -> name("products");
 
