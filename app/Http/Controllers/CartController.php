@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Log;
 
 class CartController extends Controller
 {
+    
     public function addToCart(Request $request)
     {
         $cart = session()->get('cart', []);

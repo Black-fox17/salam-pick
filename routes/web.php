@@ -31,5 +31,6 @@ Route::post('/cart/add', [CartController::class, 'addToCart'])->name('cart.add')
 Route::get('/cart', [CartController::class, 'getCart'])->name('cart');
 Route::get('/cart/count', [CartController::class, 'cartCount'])->name('cart.count');
 Route::post('/cart/remove', [CartController::class, 'removeFromCart'])->name('cart.remove');
-
 Route::get("/payment",[HomeController::class,'index']) -> name('buy');
+
+Route::post('/admin/add',[ProductController::class,'store']);
