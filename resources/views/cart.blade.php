@@ -36,7 +36,7 @@
             <h3>Total Payment: ${{ $total }}</h3>
         </div>
         <div class="btn-buy">
-            <a href = "{{ route('buy') }}" class="add-link" target = "_blank">
+            <a href = "{{ route('buy', ['amount' => $total]) }}" class="add-link" target = "_blank">
                     <button  class="add-to-cart">Checkout</button>
             </a>
         </div>

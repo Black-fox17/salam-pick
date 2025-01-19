@@ -22,8 +22,10 @@ class HomeController extends Controller
      *
      * @return \Illuminate\Contracts\Support\Renderable
      */
-    public function index()
+    public function showPaymentPage(Request $request)
     {
-        return view('buy');
+        $amount = $request->query('amount', 0); 
+        return view('buy', compact('amount'));
     }
+
 }
