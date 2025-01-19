@@ -32,5 +32,5 @@ Route::get('/cart', [CartController::class, 'getCart'])->name('cart');
 Route::get('/cart/count', [CartController::class, 'cartCount'])->name('cart.count');
 Route::post('/cart/remove', [CartController::class, 'removeFromCart'])->name('cart.remove');
 Route::get("/payment",[HomeController::class,'showPaymentPage']) -> name('buy');
-
+Route::get('/payment/success', [HomeController::class, 'paymentSuccess'])->name('payment.success');
 Route::post('/admin/add',[ProductController::class,'store']);

@@ -116,6 +116,7 @@ function onGooglePayLoaded() {
         // @todo pass payment token to your gateway to process payment
         // @note DO NOT save the payment credentials for future transactions
         paymentToken = res.paymentMethodData.tokenizationData.token;
+        window.location.href = '/payment/success';
       })
       .catch(console.error);
   }

@@ -27,5 +27,9 @@ class HomeController extends Controller
         $amount = $request->query('amount', 0); 
         return view('buy', compact('amount'));
     }
+    public function paymentSuccess()
+    {
+        return view('success'); // Create this view
+    }
 
 }
